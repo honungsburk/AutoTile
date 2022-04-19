@@ -1,5 +1,5 @@
-const CANVAS_SIZE_X = 1500;
-const CANVAS_SIZE_Y = 1000;
+const CANVAS_SIZE_X = 6000 / 6;
+const CANVAS_SIZE_Y = 4000 / 6;
 
 let step1;
 let step2;
@@ -22,15 +22,6 @@ function preload() {
   img = loadImage("assets/510.png");
 }
 
-// helper for writing color to array
-function writeColor(image, x, y, red, green, blue, alpha) {
-  let index = (x + y * width) * 4;
-  image.pixels[index] = red;
-  image.pixels[index + 1] = green;
-  image.pixels[index + 2] = blue;
-  image.pixels[index + 3] = alpha;
-}
-
 /**
  * The setup function is run before anything else.
  */
@@ -41,29 +32,10 @@ function setup() {
    */
   createCanvas(CANVAS_SIZE_X, CANVAS_SIZE_Y);
   // Since we want a static image we will turn off the looping.
-  // noLoop();
   background(0, 0, 0);
 
   initG = createGraphics(width, height);
   initG.image(img, 0, 0, width, height);
-  // image(img, 0, 0, width, height);
-  // for (var i = 0; i < width; i++) {
-  //   for (var j = 0; j < height; j++) {
-  //     initG.set(i, j, color(random(130, 170), random(0, 10), random(10, 40)));
-  //   }
-  // }
-  // initG.updatePixels();
-  // initG.noStroke();
-  // initG.rectMode(CENTER);
-  // initG.fill("#330209");
-  // let lines = 10;
-  // let lineWidth = (width / lines) * 0.2;
-  // let start = width * 0.1 + lineWidth / 2;
-  // let end = width * 0.9 - lineWidth / 2;
-  // let step = (end - start) / lines;
-  // for (let i = 0; i <= lines; i++) {
-  //   initG.rect(start + step * i, height / 2, lineWidth, height * 9);
-  // }
 
   // initialize the createGraphics layers
   pass1 = createGraphics(width, height, WEBGL);
@@ -79,9 +51,48 @@ function setup() {
   step2.setUniform("rand_seed", [random(), random()]);
   step2.setUniform("texture", initG);
   pass2.rect(0, 0, width, height);
+  image(pass2, 0, 0, width, height);
 }
 
+const ITERATIONS = 2400
+const FLIPEVERY = 500
+let horizontal = true
+
+let i = 1;
 function draw() {
+
+  if(i <= ITERATIONS){
+    itr()
+    if(i % (FLIPEVERY / 2) === 0){
+      console.log(i % (FLIPEVERY / 2))
+      if(horizontal){
+        flipHorizontal(pass2, this)
+      } else {
+        flipVertical(pass2, this)
+      }
+      horizontal = !horizontal
+
+      //Loads the image
+      initG.image(this, 0, 0, width, height);
+      pass2.shader(step2);
+      step2.setUniform("resolution", [width, height]);
+      step2.setUniform("rand_seed", [random(), random()]);
+      step2.setUniform("texture", initG);
+      pass2.rect(0, 0, width, height);
+    }
+    itr()
+    image(pass2, 0, 0, width, height);
+  }
+
+  i++
+}
+
+
+
+const wHalf = CANVAS_SIZE_X/2
+const hHalf =  CANVAS_SIZE_Y/2
+
+function itr(){
   pass1.shader(step1);
   step1.setUniform("resolution", [width, height]);
   step1.setUniform("rand_seed", [random(), random()]);
@@ -95,9 +106,19 @@ function draw() {
   step2.setUniform("rand_seed", [random(), random()]);
   step2.setUniform("texture", pass1);
   pass2.rect(0, 0, width, height);
+}
 
-  image(pass2, 0, 0, width, height);
-  // quad(-1, -1, 1, -1, 1, 1, -1, 1);
+function flipVertical(from, to){
+  to.copy(from, 0, 0, wHalf, hHalf, wHalf, 0, wHalf, hHalf)
+  to.copy(from, -wHalf, 0, wHalf, hHalf, 0, 0, wHalf, hHalf)
+  to.copy(from, 0, -hHalf, wHalf, hHalf, wHalf, hHalf, wHalf, hHalf)
+  to.copy(from, -wHalf, -hHalf, wHalf, hHalf, 0, hHalf, wHalf, hHalf)
+}
+function flipHorizontal(from, to){
+  to.copy(from, 0, 0, wHalf, hHalf, 0, hHalf, wHalf, hHalf)
+  to.copy(from, -wHalf, 0, wHalf, hHalf, wHalf, hHalf, wHalf, hHalf)
+  to.copy(from, 0, -hHalf, wHalf, hHalf, 0, 0, wHalf, hHalf)
+  to.copy(from, -wHalf, -hHalf, wHalf, hHalf, wHalf, 0, wHalf, hHalf)
 }
 
 /**
